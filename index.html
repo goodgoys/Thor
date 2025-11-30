@@ -130,6 +130,9 @@
 
     <footer>
       <p>&copy; ShamrockStocks</p>
+      <div id="page-views" style="font-size:90%;color:#666;margin-top:6px;">
+        Views: <span id="page-count">—</span>
+      </div>
     </footer>
     <link rel="stylesheet" href="/assets/style.css">
 
@@ -167,6 +170,16 @@
         els.forEach(function(el){
           el.addEventListener('click', trackDownload);
         });
+      });
+    </script>
+
+    <!-- CountAPI-based page view counter -->
+    <script src="/scripts/countapi.js" defer></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function(){
+        if (typeof initCountAPI === 'function') {
+          initCountAPI({ namespace: 'goodgoys-thor', elementId: 'page-count', increment: true });
+        }
       });
     </script>
 
