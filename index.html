@@ -149,6 +149,12 @@
     </script>
     -->
 
+    <!-- CountAPI meta config (optional) -->
+    <!--
+      <meta name="countapi-enabled" content="true">  -- set to false to disable counter
+      <meta name="countapi-key" content="global-site-counter">  -- use with keyStrategy="meta"
+    -->
+
     <script>
       // Track resume downloads and other interactions.
       function trackDownload() {
@@ -178,7 +184,15 @@
     <script>
       document.addEventListener('DOMContentLoaded', function(){
         if (typeof initCountAPI === 'function') {
-          initCountAPI({ namespace: 'goodgoys-thor', elementId: 'page-count', increment: true });
+          // Initialize a site-wide global counter by default. Change keyStrategy to 'path' for per-page counters.
+          initCountAPI({
+            namespace: 'goodgoys-thor',
+            // keyStrategy: 'global' | 'path' | 'meta'
+            keyStrategy: 'global',
+            globalKey: 'site-views',
+            elementId: 'page-count',
+            increment: true
+          });
         }
       });
     </script>
