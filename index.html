@@ -130,6 +130,9 @@
 
     <footer>
       <p>&copy; ShamrockStocks</p>
+      <div id="page-views" style="font-size:90%;color:#666;margin-top:6px;">
+        Views: <span id="page-count">—</span>
+      </div>
     </footer>
     <link rel="stylesheet" href="/assets/style.css">
 
@@ -144,6 +147,12 @@
       gtag('js', new Date());
       gtag('config', 'G-MEASUREMENT_ID');
     </script>
+    -->
+
+    <!-- CountAPI meta config (optional) -->
+    <!--
+      <meta name="countapi-enabled" content="true">  -- set to false to disable counter
+      <meta name="countapi-key" content="global-site-counter">  -- use with keyStrategy="meta"
     -->
 
     <script>
@@ -167,6 +176,24 @@
         els.forEach(function(el){
           el.addEventListener('click', trackDownload);
         });
+      });
+    </script>
+
+    <!-- CountAPI-based page view counter -->
+    <script src="/scripts/countapi.js" defer></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function(){
+        if (typeof initCountAPI === 'function') {
+          // Initialize a site-wide global counter by default. Change keyStrategy to 'path' for per-page counters.
+          initCountAPI({
+            namespace: 'goodgoys-thor',
+            // keyStrategy: 'global' | 'path' | 'meta'
+            keyStrategy: 'global',
+            globalKey: 'site-views',
+            elementId: 'page-count',
+            increment: true
+          });
+        }
       });
     </script>
 

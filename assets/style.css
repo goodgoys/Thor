@@ -3,6 +3,10 @@ header{margin-bottom:24px}
 nav a{color:#0366d6;text-decoration:none}
 footer{margin-top:36px;color:#666;font-size:90%}
 
+/* Page view counter (small, subtle) */
+#page-views{font-size:85%;color:#666;margin-top:6px}
+#page-views #page-count{font-weight:600;color:#333;margin-left:6px}
+
 /* Responsive download link handling */
 .download-small{display:none}
 .header-download{display:inline-block}
