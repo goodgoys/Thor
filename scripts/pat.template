@@ -1,0 +1,19 @@
+# pat.template
+#
+# This is a local template showing where to place a Personal Access Token (PAT)
+# if you absolutely must store one locally. DO NOT commit a real token to git.
+# Instead prefer the interactive setter `set_github_token.ps1` or `gh auth login`.
+#
+# If you choose to use a local file, save the token to `scripts/pat.secret` (NOT
+# checked into git). Example file contents (single line):
+#
+# ghp_your_generated_token_here
+#
+# To apply the token for the current PowerShell session (safe, not persisted):
+#
+# $env:GITHUB_TOKEN = Get-Content .\\scripts\\pat.secret -Raw
+#
+# IMPORTANT:
+# - After creating `scripts/pat.secret`, ensure it is ignored by git (see ../.gitignore).
+# - If a token is accidentally exposed, revoke it immediately at https://github.com/settings/tokens
+#

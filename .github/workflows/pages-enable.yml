@@ -1,0 +1,55 @@
+name: Enable GitHub Pages
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  enable-pages:
+    name: Enable Pages (manual)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Pages via API
+        env:
+          REPO: ${{ github.repository }}
+          PAGES_PAT: ${{ secrets.PAGES_PAT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PAGES_PAT:-}" ]; then
+            echo "ERROR: repository secret PAGES_PAT is not set. Add a PAT as a repository secret and retry." >&2
+            exit 1
+          fi
+
+          echo "Calling Pages API to publish $REPO from branch 'main' and root path '/'."
+          create_resp=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${PAGES_PAT}" \
+            -H "Accept: application/vnd.github+json" \
+            -d '{"source":{"branch":"main","path":"/"}}' \
+            "https://api.github.com/repos/${REPO}/pages")
+
+          create_body=$(echo "$create_resp" | sed '$d' )
+          create_code=$(echo "$create_resp" | tail -n1)
+          echo "Create HTTP code: $create_code"
+          echo "Create body: $create_body"
+          if [ "$create_code" -ge 400 ]; then
+            echo "Pages API create returned $create_code" >&2
+            exit 1
+          fi
+
+          echo "Polling Pages status (short loop)..."
+          for i in 1 2 3 4 5; do
+            status_resp=$(curl -s -H "Authorization: Bearer ${PAGES_PAT}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/pages")
+            echo "$status_resp" | jq -r '. | {html_url: .html_url, cname: .cname, status: .status}' 2>/dev/null || echo "$status_resp"
+            status=$(echo "$status_resp" | jq -r '.status // empty' 2>/dev/null || true)
+            if [ "$status" = "built" ] || [ "$status" = "ready" ]; then
+              echo "Pages site appears published." 
+              exit 0
+            fi
+            echo "Not ready yet (status=$status). Sleeping 5s..."
+            sleep 5
+          done
+
+          echo "Timed out waiting for Pages to publish. Inspect Pages settings in repository UI." >&2
+          exit 1

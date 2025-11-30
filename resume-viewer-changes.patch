@@ -1,0 +1,198 @@
+diff --git a/.github/workflows/pages-enable.yml b/.github/workflows/pages-enable.yml
+new file mode 100644
+index 0000000..db642f5
+--- /dev/null
++++ b/.github/workflows/pages-enable.yml
+@@ -0,0 +1,55 @@
++name: Enable GitHub Pages
++
++on:
++  workflow_dispatch: {}
++
++jobs:
++  enable-pages:
++    name: Enable Pages (manual)
++    runs-on: ubuntu-latest
++    steps:
++      - name: Checkout
++        uses: actions/checkout@v4
++
++      - name: Enable Pages via API
++        env:
++          REPO: ${{ github.repository }}
++          PAGES_PAT: ${{ secrets.PAGES_PAT }}
++        run: |
++          set -euo pipefail
++          if [ -z "${PAGES_PAT:-}" ]; then
++            echo "ERROR: repository secret PAGES_PAT is not set. Add a PAT as a repository secret and retry." >&2
++            exit 1
++          fi
++
++          echo "Calling Pages API to publish $REPO from branch 'main' and root path '/'."
++          create_resp=$(curl -s -w "\n%{http_code}" -X POST \
++            -H "Authorization: Bearer ${PAGES_PAT}" \
++            -H "Accept: application/vnd.github+json" \
++            -d '{"source":{"branch":"main","path":"/"}}' \
++            "https://api.github.com/repos/${REPO}/pages")
++
++          create_body=$(echo "$create_resp" | sed '$d' )
++          create_code=$(echo "$create_resp" | tail -n1)
++          echo "Create HTTP code: $create_code"
++          echo "Create body: $create_body"
++          if [ "$create_code" -ge 400 ]; then
++            echo "Pages API create returned $create_code" >&2
++            exit 1
++          fi
++
++          echo "Polling Pages status (short loop)..."
++          for i in 1 2 3 4 5; do
++            status_resp=$(curl -s -H "Authorization: Bearer ${PAGES_PAT}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${REPO}/pages")
++            echo "$status_resp" | jq -r '. | {html_url: .html_url, cname: .cname, status: .status}' 2>/dev/null || echo "$status_resp"
++            status=$(echo "$status_resp" | jq -r '.status // empty' 2>/dev/null || true)
++            if [ "$status" = "built" ] || [ "$status" = "ready" ]; then
++              echo "Pages site appears published." 
++              exit 0
++            fi
++            echo "Not ready yet (status=$status). Sleeping 5s..."
++            sleep 5
++          done
++
++          echo "Timed out waiting for Pages to publish. Inspect Pages settings in repository UI." >&2
++          exit 1
+diff --git a/README.md b/README.md
+index 73f2082..ec3e23f 100644
+--- a/README.md
++++ b/README.md
+@@ -28,3 +28,22 @@ git update-index --chmod=+x .githooks/pre-commit
+ ```
+ 
+ The installer scripts are idempotent and safe to re-run.
++
++## Enable GitHub Pages (automation)
++
++You can enable the repository Pages site automatically using a small manual workflow that calls the Pages REST API.
++
++- Create a Personal Access Token (classic) with the `repo` scope (and `workflow` if you plan to trigger workflows programmatically).
++- In the repository > Settings > Secrets > Actions, add a new secret named `PAGES_PAT` with that token as the value.
++
++To run the workflow from the Actions UI, open the repository Actions tab, select "Enable GitHub Pages", then click "Run workflow" and choose `main` as the branch.
++
++If you prefer the command line and have the GitHub CLI installed and authenticated, run:
++
++```powershell
++gh workflow run pages-enable.yml --repo ShamrocksStocks/shamrockstocks.github.io --ref main
++```
++
++Notes:
++- The workflow uses the `PAGES_PAT` secret to call the Pages API and will poll briefly until the site is published. If the secret is not set the job will fail with a helpful message.
++- For security, do NOT commit PATs into the repository. Use repository secrets or the interactive scripts in `scripts/`.
+diff --git a/index.html b/index.html
+index 96b6fe3..e54a815 100644
+--- a/index.html
++++ b/index.html
+@@ -21,6 +21,7 @@
+       </nav>
+       <div>
+         <a class="header-download" href="/MichaelSFlahertyResume.pdf" download style="background:#0366d6;color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none;font-size:90%;">Download Resume</a>
++        <a class="header-view" href="/resume.html" style="margin-left:8px;background:#22c55e;color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none;font-size:90%;">View Resume</a>
+         <!-- Small download link for mobile / compact views -->
+         <a class="download-small" href="/MichaelSFlahertyResume.pdf" download aria-label="Download resume" style="text-decoration:none;color:#0366d6;margin-left:8px;">▸ Resume</a>
+       </div>
+@@ -34,6 +35,8 @@
+           </div>
+           <div>
+             <a href="/MichaelSFlahertyResume.pdf" download style="color:#0366d6;text-decoration:none;font-weight:600;">Download Resume (PDF)</a>
++            &nbsp;•&nbsp;
++            <a href="/resume.html" style="color:#22c55e;text-decoration:none;font-weight:600;">Open Viewer</a>
+           </div>
+         </div>
+         <div id="pdf-viewer" style="width:100%;height:calc(100vh - 120px);background:#fff;"></div>
+diff --git a/resume.html b/resume.html
+new file mode 100644
+index 0000000..627f9fe
+--- /dev/null
++++ b/resume.html
+@@ -0,0 +1,16 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <meta name="viewport" content="width=device-width,initial-scale=1" />
++    <title>Resume — Michael S. Flaherty</title>
++    <style>html,body{height:100%;margin:0}iframe{border:0;width:100%;height:100vh}</style>
++  </head>
++  <body>
++    <!-- Embed PDF.js viewer for same-origin PDF to ensure reliable browser rendering -->
++    <iframe src="/pdfjs/web/viewer.html?file=/MichaelSFlahertyResume.pdf" title="Resume viewer" allowfullscreen></iframe>
++    <noscript>
++      <p>The interactive resume viewer requires JavaScript. <a href="/MichaelSFlahertyResume.pdf">Download the PDF</a>.</p>
++    </noscript>
++  </body>
++</html>
+diff --git a/scripts/enable_pages.ps1 b/scripts/enable_pages.ps1
+new file mode 100644
+index 0000000..f2a23c0
+--- /dev/null
++++ b/scripts/enable_pages.ps1
+@@ -0,0 +1,61 @@
++# enable_pages.ps1
++# Usage: run from repo root with $env:GITHUB_TOKEN set
++$headers = @{
++  Authorization = "Bearer $env:GITHUB_TOKEN"
++  Accept = 'application/vnd.github+json'
++  'User-Agent' = 'ps'
++}
++
++Write-Output "GITHUB_TOKEN present: " + ([string]::IsNullOrEmpty($env:GITHUB_TOKEN) -eq $false)
++
++function TryInvoke($scriptblock, $label) {
++  try {
++    & $scriptblock
++  } catch {
++    Write-Output "$label ERROR: $($_.Exception.Message)"
++    if ($_.Exception.Response) {
++      try { $code = $_.Exception.Response.StatusCode.Value__ } catch { $code = 'unknown' }
++      Write-Output "$label HTTP status: $code"
++    }
++  }
++}
++
++# Create/enable Pages
++TryInvoke {
++  $body = @{ source = @{ branch = 'main'; path = '/' } } | ConvertTo-Json
++  $resp = Invoke-RestMethod -Method Post -Uri 'https://api.github.com/repos/ShamrocksStocks/shamrockstocks.github.io/pages' -Headers $headers -Body $body -ErrorAction Stop
++  Write-Output "CREATE OK:`n" + ($resp | Select-Object url, html_url, cname | ConvertTo-Json -Depth 4)
++} 'Create'
++
++Start-Sleep -Seconds 2
++
++# Get Pages status
++TryInvoke {
++  $status = Invoke-RestMethod -Uri 'https://api.github.com/repos/ShamrocksStocks/shamrockstocks.github.io/pages' -Headers $headers -ErrorAction Stop
++  Write-Output "STATUS:`n" + ($status | ConvertTo-Json -Depth 6)
++} 'Status'
++
++Start-Sleep -Seconds 1
++
++# Get builds
++TryInvoke {
++  $builds = Invoke-RestMethod -Uri 'https://api.github.com/repos/ShamrocksStocks/shamrockstocks.github.io/pages/builds' -Headers $headers -ErrorAction Stop
++  Write-Output "BUILDS:`n" + ($builds | Select-Object -First 5 | ConvertTo-Json -Depth 6)
++} 'Builds'
++
++Start-Sleep -Seconds 1
++
++# Check site URLs
++TryInvoke {
++  $r1 = Invoke-WebRequest -Uri 'https://shamrockstocks.github.io/' -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
++  Write-Output "shamrockstocks.github.io HTTP status: $($r1.StatusCode)"
++} 'shamrockstocks'
++
++Start-Sleep -Seconds 1
++
++TryInvoke {
++  $r2 = Invoke-WebRequest -Uri 'https://tradehax.net/' -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
++  Write-Output "tradehax.net HTTP status: $($r2.StatusCode)"
++} 'tradehax'
++
++Write-Output 'SCRIPT DONE'
