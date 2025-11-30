@@ -128,9 +128,17 @@
         </noscript>
     </main>
 
-    <footer>
-      <p>&copy; ShamrockStocks</p>
-    </footer>
+<footer>
+  <p>&copy; ShamrockStocks</p>
+
+  <!-- Visitor counter: uses CountAPI to show a simple hit counter. -->
+  <div id="visitor-counter" style="margin-top:8px;font-size:0.95em;color:#333;">
+    Visitors: <span id="vc-count" aria-live="polite">...</span>
+  </div>
+</footer>
+
+<!-- Load the visitor counter script (placed at site root: /scripts/visitor-counter.js) -->
+<script src="/scripts/visitor-counter.js"></script>
     <link rel="stylesheet" href="/assets/style.css">
 
     <!-- Analytics placeholder: replace MEASUREMENT_ID with your ID -->
