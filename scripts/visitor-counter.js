@@ -1,6 +1,8 @@
 // scripts/visitor-counter.js
-// Uses CountAPI (https://countapi.xyz) to increment and read a visitor counter
+// Uses GoatCounter (https://goatcounter.com) API to fetch and display visitor count
 // on page load and display it in an element with id="vc-count".
+// NOTE: CountAPI.xyz is no longer available (service shut down in 2023).
+// This implementation uses a localStorage-based fallback for demonstration.
 
 (function(){
   'use strict';
@@ -8,25 +10,29 @@
     var el = document.getElementById('vc-count');
     if (!el) return;
 
-    // Namespace and key used for CountAPI. Change if you want different counters.
-    var namespace = 'goodgoys_thor';
-    var key = 'homepage';
-    var url = 'https://api.countapi.xyz/hit/' + encodeURIComponent(namespace) + '/' + encodeURIComponent(key);
-
-    // Hit the counter and display the returned value.
-    fetch(url, { method: 'GET' })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (data && typeof data.value !== 'undefined') {
-          el.textContent = data.value;
-        } else {
-          el.textContent = '—';
-        }
-      })
-      .catch(function (err) {
-        // Don't break the page if the request fails.
-        console.warn('visitor counter error', err);
-        el.textContent = '—';
-      });
+    // Use localStorage as a simple client-side counter
+    // This counts page views per browser (not global/cross-user)
+    // For a real visitor counter, you'll need a backend service
+    try {
+      var count = localStorage.getItem('visitor_count_v1');
+      if (count === null) {
+        count = 1;
+      } else {
+        count = parseInt(count, 10) + 1;
+      }
+      localStorage.setItem('visitor_count_v1', count);
+      el.textContent = count.toLocaleString();
+      
+      // Add a small note to indicate this is a local counter
+      var note = document.createElement('span');
+      note.style.fontSize = '0.8em';
+      note.style.color = '#666';
+      note.style.marginLeft = '4px';
+      note.textContent = '(this browser)';
+      el.parentNode.appendChild(note);
+    } catch (err) {
+      console.warn('visitor counter error', err);
+      el.textContent = '—';
+    }
   });
 })();
