@@ -197,5 +197,39 @@
       });
     </script>
 
+    <!-- Temporary helper: show a prominent counter when ?showcounter=1 is present. -->
+    <script>
+      (function(){
+        function hasQueryFlag(name){
+          try{ var s = new URLSearchParams(location.search); return s.get(name) === '1'; }catch(e){return false}
+        }
+
+        function makeCloseButton(){
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'counter-close';
+          btn.textContent = 'Hide';
+          btn.addEventListener('click', function(){
+            var pv = document.getElementById('page-views');
+            if (pv) { pv.classList.remove('temp-visible'); sessionStorage.setItem('pageViewsHidden', '1'); }
+          });
+          return btn;
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+          try{
+            var pv = document.getElementById('page-views');
+            if (!pv) return;
+            var hidden = sessionStorage.getItem('pageViewsHidden') === '1';
+            if (hidden) return;
+            if (hasQueryFlag('showcounter')){
+              pv.classList.add('temp-visible');
+              if (!pv.querySelector('.counter-close')) pv.appendChild(makeCloseButton());
+            }
+          }catch(e){/* ignore */}
+        });
+      })();
+    </script>
+
   </body>
 </html>

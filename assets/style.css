@@ -7,6 +7,23 @@ footer{margin-top:36px;color:#666;font-size:90%}
 #page-views{font-size:85%;color:#666;margin-top:6px}
 #page-views #page-count{font-weight:600;color:#333;margin-left:6px}
 
+/* Temporary: make the counter highly visible when `.temp-visible` is applied.
+	 Remove this block when verification is complete. */
+.temp-visible#page-views{
+	position:fixed;
+	left:16px;
+	bottom:16px;
+	background:rgba(3,102,214,0.95);
+	color:#fff;
+	padding:10px 12px;
+	border-radius:8px;
+	box-shadow:0 8px 24px rgba(0,0,0,0.25);
+	font-size:110%;
+	z-index:2000;
+}
+.temp-visible#page-views #page-count{color:#fff}
+.temp-visible#page-views .counter-close{margin-left:10px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#fff;padding:4px 6px;border-radius:6px;cursor:pointer}
+
 /* Responsive download link handling */
 .download-small{display:none}
 .header-download{display:inline-block}
