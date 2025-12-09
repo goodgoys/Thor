@@ -74,17 +74,25 @@
     updateElement(el, '…');
 
     var fetchImpl = opts.fetch || defaultFetch;
+    var displayOffset = Number(opts.displayOffset || 0) || 0;
 
     return fetchCountWithFetch(fetchImpl, namespace, key, increment).then(function(data){
+      var value = null;
       if (data && typeof data.value !== 'undefined') {
-        updateElement(el, String(data.value));
+        value = Number(data.value);
       } else if (data && typeof data.count !== 'undefined') {
-        updateElement(el, String(data.count));
+        value = Number(data.count);
       } else if (data && typeof data === 'number') {
-        updateElement(el, String(data));
-      } else {
-        updateElement(el, '—');
+        value = Number(data);
       }
+
+      if (value === null || Number.isNaN(value)) {
+        updateElement(el, '—');
+      } else {
+        var shown = value + displayOffset;
+        updateElement(el, String(shown));
+      }
+
       return data;
     }).catch(function(err){
       updateElement(el, '—');
